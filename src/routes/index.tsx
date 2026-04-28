@@ -80,7 +80,7 @@ const QUADRANTS = 6;
 
 const QUAD_COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#e67e22"];
 const TEAM_NAMES = ["TEAM 1", "TEAM 2", "TEAM 3", "TEAM 4", "TEAM 5", "TEAM 6"];
-const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍋", "🍉", "🍑", "🍒", "🍍", "🥝", "🫐"];
+const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍋", "🍉", "🍑", "🍒", "🍍"];
 
 type Cell = { hit: boolean; house: boolean; revealed: boolean; fruit: string };
 
@@ -120,7 +120,7 @@ function Game() {
   }, []);
 
   const images = useMemo(
-    () => ["apple", "banana", "cherry", "grape", "lemon", "orange", "pear", "pineapple", "strawberry", "watermelon"],
+    () => Array.from({ length: 15 }, (_, i) => `q${i + 1}`),
     [],
   );
 
@@ -142,24 +142,25 @@ function Game() {
 
   const handleCellClick = (qIdx: number, cIdx: number, e: React.MouseEvent<HTMLDivElement>) => {
     ensureStarted();
-    const target = e.currentTarget;
-    const board = target.closest(".quadrant") as HTMLElement | null;
+    const board = (e.currentTarget.closest(".quadrant") as HTMLElement | null);
     if (!board) return;
     const rect = board.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    let wasHouseHit = false;
+    const current = quads[qIdx]?.[cIdx];
+    if (!current || current.hit) return;
+    const isHouse = current.house;
+
     setQuads((prev) => {
       const next = prev.map((g) => g.map((c) => ({ ...c })));
       const cell = next[qIdx][cIdx];
-      if (cell.hit) return prev;
       cell.hit = true;
-      if (cell.house) { cell.revealed = true; wasHouseHit = true; }
+      if (cell.house) cell.revealed = true;
       return next;
     });
 
-    if (wasHouseHit) {
+    if (isHouse) {
       addBurst(qIdx, x, y);
       SFX.explosion();
     } else {
@@ -171,7 +172,7 @@ function Game() {
     ensureStarted();
     SFX.click();
     const name = images[Math.floor(Math.random() * images.length)];
-    setPopupImg(`questions/${name}.png`);
+    setPopupImg(`/questions/${name}.png`);
     setWheelOpen(false);
     setWheelResult(null);
     setPopupOpen(true);
@@ -308,7 +309,7 @@ function Game() {
                     <span style={{ color: "#e74c3c", fontWeight: 900 }}>❌</span>
                   ) : (
                     <>
-                      <span>{cell.fruit}</span>
+                      <span style={{ fontFamily: '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif', lineHeight: 1 }}>{cell.fruit}</span>
                       <span
                         style={{
                           position: "absolute",
@@ -328,7 +329,7 @@ function Game() {
             </div>
 
             {/* Burst overlay */}
-            <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 20 }}>
               {bursts[qIdx].map((b) => (
                 <div key={b.id} style={{ position: "absolute", left: b.x, top: b.y, transform: "translate(-50%,-50%)" }}>
                   <div className="boom-core" />
@@ -381,14 +382,36 @@ function Game() {
           >
             {!wheelOpen ? (
               <>
-                <img
-                  src={popupImg ?? ""}
-                  alt="question"
-                  style={{ maxWidth: "70vw", maxHeight: "60vh", borderRadius: 6 }}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                />
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <img
+                    src={popupImg ?? ""}
+                    alt="question"
+                    style={{ maxWidth: "70vw", maxHeight: "60vh", borderRadius: 6, display: "block" }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <button
+                    onClick={openWheel}
+                    style={{
+                      position: "absolute",
+                      bottom: 10,
+                      right: 10,
+                      background: "#2ecc71",
+                      color: "#000",
+                      border: "none",
+                      padding: "8px 14px",
+                      borderRadius: 20,
+                      fontWeight: 700,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    🎡 Spin the Wheel
+                  </button>
+                </div>
                 <div style={{ display: "flex", gap: 10 }}>
-                  <button onClick={openWheel} style={btnGreen}>🎡 Spin the Wheel</button>
                   <button onClick={closePopup} style={btnGhost}>Close</button>
                 </div>
               </>
