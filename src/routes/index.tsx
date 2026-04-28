@@ -142,24 +142,25 @@ function Game() {
 
   const handleCellClick = (qIdx: number, cIdx: number, e: React.MouseEvent<HTMLDivElement>) => {
     ensureStarted();
-    const target = e.currentTarget;
-    const board = target.closest(".quadrant") as HTMLElement | null;
+    const board = (e.currentTarget.closest(".quadrant") as HTMLElement | null);
     if (!board) return;
     const rect = board.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    let wasHouseHit = false;
+    const current = quads[qIdx]?.[cIdx];
+    if (!current || current.hit) return;
+    const isHouse = current.house;
+
     setQuads((prev) => {
       const next = prev.map((g) => g.map((c) => ({ ...c })));
       const cell = next[qIdx][cIdx];
-      if (cell.hit) return prev;
       cell.hit = true;
-      if (cell.house) { cell.revealed = true; wasHouseHit = true; }
+      if (cell.house) cell.revealed = true;
       return next;
     });
 
-    if (wasHouseHit) {
+    if (isHouse) {
       addBurst(qIdx, x, y);
       SFX.explosion();
     } else {
