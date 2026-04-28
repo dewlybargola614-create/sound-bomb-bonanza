@@ -261,15 +261,22 @@ function Game() {
                   onClick={(e) => handleCellClick(qIdx, cIdx, e)}
                   onMouseEnter={() => SFX.blip()}
                   style={{
+                    position: "relative",
                     background: cell.revealed
-                      ? "#c0392b"
+                      ? "#e74c3c"
                       : cell.hit
                         ? "#2c3e50"
-                        : "#1e5a7a",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                        : "#2d6b8a",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 3,
                     cursor: cell.hit ? "default" : "pointer",
                     transition: "background 0.15s, transform 0.1s",
                     animation: cell.revealed ? "shake 0.4s ease" : undefined,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "clamp(14px, 2.2vw, 22px)",
+                    userSelect: "none",
                   }}
                   onMouseDown={(e) => {
                     if (!cell.hit) (e.currentTarget as HTMLDivElement).style.transform = "scale(0.92)";
@@ -277,7 +284,29 @@ function Game() {
                   onMouseUp={(e) => {
                     (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
                   }}
-                />
+                >
+                  {cell.revealed ? (
+                    <span>💥🏠</span>
+                  ) : cell.hit ? (
+                    <span style={{ color: "#e74c3c", fontWeight: 900 }}>❌</span>
+                  ) : (
+                    <>
+                      <span>{cell.fruit}</span>
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: 1,
+                          right: 3,
+                          fontSize: "clamp(8px, 1vw, 11px)",
+                          color: "rgba(255,255,255,0.85)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {cIdx + 1}
+                      </span>
+                    </>
+                  )}
+                </div>
               ))}
             </div>
 
