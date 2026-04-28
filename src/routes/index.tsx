@@ -120,7 +120,7 @@ function Game() {
   }, []);
 
   const images = useMemo(
-    () => ["apple", "banana", "cherry", "grape", "lemon", "orange", "pear", "pineapple", "strawberry", "watermelon"],
+    () => Array.from({ length: 15 }, (_, i) => `q${i + 1}`),
     [],
   );
 
