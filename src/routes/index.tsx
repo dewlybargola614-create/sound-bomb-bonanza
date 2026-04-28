@@ -172,7 +172,7 @@ function Game() {
     ensureStarted();
     SFX.click();
     const name = images[Math.floor(Math.random() * images.length)];
-    setPopupImg(`questions/${name}.png`);
+    setPopupImg(`/questions/${name}.png`);
     setWheelOpen(false);
     setWheelResult(null);
     setPopupOpen(true);
