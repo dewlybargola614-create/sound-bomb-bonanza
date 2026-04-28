@@ -329,7 +329,7 @@ function Game() {
             </div>
 
             {/* Burst overlay */}
-            <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 20 }}>
               {bursts[qIdx].map((b) => (
                 <div key={b.id} style={{ position: "absolute", left: b.x, top: b.y, transform: "translate(-50%,-50%)" }}>
                   <div className="boom-core" />
