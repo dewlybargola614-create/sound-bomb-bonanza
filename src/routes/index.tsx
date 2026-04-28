@@ -383,14 +383,13 @@ function Game() {
             {!wheelOpen ? (
               <>
                 <div style={{ position: "relative", display: "inline-block" }}>
-                  <img
-                    src={popupImg ?? ""}
-                    alt="question"
-                    style={{ maxWidth: "70vw", maxHeight: "60vh", borderRadius: 6, display: "block" }}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
-                    }}
-                  />
+                  {popupImg && (
+                    <img
+                      src={popupImg}
+                      alt="question"
+                      style={{ maxWidth: "70vw", maxHeight: "60vh", borderRadius: 6, display: "block", background: "#fff" }}
+                    />
+                  )}
                   <button
                     onClick={openWheel}
                     style={{
