@@ -309,7 +309,7 @@ function Game() {
                     <span style={{ color: "#e74c3c", fontWeight: 900 }}>❌</span>
                   ) : (
                     <>
-                      <span>{cell.fruit}</span>
+                      <span style={{ fontFamily: '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif', lineHeight: 1 }}>{cell.fruit}</span>
                       <span
                         style={{
                           position: "absolute",
