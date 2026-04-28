@@ -169,9 +169,23 @@ function Game() {
 
   const burstIdRef = useRef(0);
   const startedRef = useRef(false);
+  const [musicOn, setMusicOn] = useState(true);
   const ensureStarted = useCallback(() => {
-    if (!startedRef.current) { startedRef.current = true; SFX.click(); }
-  }, []);
+    if (!startedRef.current) {
+      startedRef.current = true;
+      SFX.click();
+      if (musicOn) startBGM();
+    }
+  }, [musicOn]);
+
+  const toggleMusic = () => {
+    SFX.click();
+    setMusicOn((on) => {
+      const next = !on;
+      if (next) startBGM(); else stopBGM();
+      return next;
+    });
+  };
 
   const images = useMemo(
     () => Array.from({ length: 15 }, (_, i) => `q${i + 1}`),
