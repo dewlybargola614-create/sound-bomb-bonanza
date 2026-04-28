@@ -101,7 +101,10 @@ function makeQuadrant(): Cell[] {
 type Burst = { id: number; x: number; y: number };
 
 function Game() {
-  const [quads, setQuads] = useState<Cell[][]>(() => Array.from({ length: QUADRANTS }, () => makeQuadrant()));
+  const [quads, setQuads] = useState<Cell[][]>(() => Array.from({ length: QUADRANTS }, () => []));
+  useEffect(() => {
+    setQuads(Array.from({ length: QUADRANTS }, () => makeQuadrant()));
+  }, []);
   const [bursts, setBursts] = useState<Burst[][]>(() => Array.from({ length: QUADRANTS }, () => []));
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupImg, setPopupImg] = useState<string | null>(null);
