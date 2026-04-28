@@ -187,10 +187,40 @@ function Game() {
     });
   };
 
-  const images = useMemo(
-    () => Array.from({ length: 15 }, (_, i) => `q${i + 1}`),
+  const defaultImages = useMemo(
+    () => Array.from({ length: 15 }, (_, i) => `/questions/q${i + 1}.png`),
     [],
   );
+  // Custom images uploaded by the user (data URLs), persisted to localStorage.
+  const [customImages, setCustomImages] = useState<string[]>([]);
+  const [editMode, setEditMode] = useState(false);
+
+  // Load persisted state on mount
+  useEffect(() => {
+    try {
+      const imgs = localStorage.getItem("fmg_custom_images");
+      if (imgs) setCustomImages(JSON.parse(imgs));
+      const qs = localStorage.getItem("fmg_quads");
+      if (qs) {
+        const parsed = JSON.parse(qs) as Cell[][];
+        if (Array.isArray(parsed) && parsed.length === QUADRANTS) setQuads(parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Persist quads whenever they change (after initial load)
+  useEffect(() => {
+    if (!quads[0] || quads[0].length === 0) return;
+    try {
+      localStorage.setItem("fmg_quads", JSON.stringify(quads));
+    } catch {
+      /* ignore */
+    }
+  }, [quads]);
+
+  const activeImages = customImages.length > 0 ? customImages : defaultImages;
 
   const addBurst = (qIdx: number, x: number, y: number) => {
     const id = ++burstIdRef.current;
