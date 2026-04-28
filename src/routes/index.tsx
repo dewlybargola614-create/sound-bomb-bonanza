@@ -73,18 +73,25 @@ const SFX = {
 };
 
 /* ---------------- Config ---------------- */
-const QUADRANT_COLS = 10;
-const QUADRANT_ROWS = 8;
-const HOUSES_PER_QUADRANT = 6;
+const QUADRANT_COLS = 5;
+const QUADRANT_ROWS = 5;
+const HOUSES_PER_QUADRANT = 2;
 const QUADRANTS = 6;
 
 const QUAD_COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#e67e22"];
+const TEAM_NAMES = ["TEAM 1", "TEAM 2", "TEAM 3", "TEAM 4", "TEAM 5", "TEAM 6"];
+const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍋", "🍉", "🍑", "🍒", "🍍", "🥝", "🫐"];
 
-type Cell = { hit: boolean; house: boolean; revealed: boolean };
+type Cell = { hit: boolean; house: boolean; revealed: boolean; fruit: string };
 
 function makeQuadrant(): Cell[] {
   const total = QUADRANT_COLS * QUADRANT_ROWS;
-  const cells: Cell[] = Array.from({ length: total }, () => ({ hit: false, house: false, revealed: false }));
+  const cells: Cell[] = Array.from({ length: total }, () => ({
+    hit: false,
+    house: false,
+    revealed: false,
+    fruit: FRUITS[Math.floor(Math.random() * FRUITS.length)],
+  }));
   const idxs = new Set<number>();
   while (idxs.size < HOUSES_PER_QUADRANT) idxs.add(Math.floor(Math.random() * total));
   idxs.forEach((i) => (cells[i].house = true));
