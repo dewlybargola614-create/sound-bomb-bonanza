@@ -269,8 +269,9 @@ function Game() {
   const openQuestion = () => {
     ensureStarted();
     SFX.click();
-    const name = images[Math.floor(Math.random() * images.length)];
-    setPopupImg(`/questions/${name}.png`);
+    if (activeImages.length === 0) return;
+    const src = activeImages[Math.floor(Math.random() * activeImages.length)];
+    setPopupImg(src);
     setWheelOpen(false);
     setWheelResult(null);
     setPopupOpen(true);
