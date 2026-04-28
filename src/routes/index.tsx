@@ -240,6 +240,21 @@ function Game() {
 
   const handleCellClick = (qIdx: number, cIdx: number, e: React.MouseEvent<HTMLDivElement>) => {
     ensureStarted();
+
+    // Edit mode: click toggles whether the cell is a hidden house.
+    if (editMode) {
+      SFX.click();
+      setQuads((prev) => {
+        const next = prev.map((g) => g.map((c) => ({ ...c })));
+        const cell = next[qIdx][cIdx];
+        cell.house = !cell.house;
+        cell.hit = false;
+        cell.revealed = false;
+        return next;
+      });
+      return;
+    }
+
     const board = (e.currentTarget.closest(".quadrant") as HTMLElement | null);
     if (!board) return;
     const rect = board.getBoundingClientRect();
