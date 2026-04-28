@@ -323,6 +323,8 @@ function Game() {
       setWheelAngle(a);
       if (now - lastTick > 60) { SFX.spinTick(); lastTick = now; }
       if (t < 1) requestAnimationFrame(step);
+      else { setSpinning(false); setWheelResult(result); SFX.spinEnd(); }
+    };
     requestAnimationFrame(step);
   };
 
