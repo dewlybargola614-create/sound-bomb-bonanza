@@ -526,24 +526,133 @@ function Game() {
         ))}
       </div>
 
-      <div style={{ textAlign: "center", padding: 10 }}>
+      <div style={{ textAlign: "center", padding: 10, display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
         <button
           onClick={openQuestion}
+          disabled={editMode}
           style={{
-            background: "#f1c40f",
+            background: editMode ? "#7a6a15" : "#f1c40f",
             color: "#000",
             border: "none",
             padding: "10px 22px",
             borderRadius: 24,
             fontWeight: 700,
             fontSize: 15,
-            cursor: "pointer",
+            cursor: editMode ? "not-allowed" : "pointer",
             boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            opacity: editMode ? 0.6 : 1,
           }}
         >
           🎯 Question
         </button>
+        <button
+          onClick={toggleEdit}
+          style={{
+            background: editMode ? "#e74c3c" : "rgba(255,255,255,0.12)",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.25)",
+            padding: "10px 18px",
+            borderRadius: 24,
+            fontWeight: 700,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          {editMode ? "✅ Done Editing" : "✏️ Edit"}
+        </button>
       </div>
+
+      {editMode && (
+        <div
+          style={{
+            margin: "0 12px 16px",
+            padding: 14,
+            background: "rgba(255,255,255,0.06)",
+            border: "1px dashed rgba(255,255,255,0.3)",
+            borderRadius: 10,
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          <div style={{ marginBottom: 10, fontWeight: 700, fontSize: 15 }}>
+            ✏️ Edit Mode
+          </div>
+          <div style={{ marginBottom: 10, opacity: 0.9 }}>
+            Click any cell on the board to <b>add</b> or <b>remove</b> a hidden 🏠.
+            Houses are shown as yellow squares while editing.
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
+            <button onClick={newGame} style={btnGreen}>🔄 New Round (keep houses)</button>
+            <button onClick={shuffleHouses} style={btnYellow}>🎲 Random Houses</button>
+          </div>
+          <div style={{ marginBottom: 8, fontWeight: 700 }}>🖼️ Question Images</div>
+          <div style={{ marginBottom: 10, opacity: 0.85 }}>
+            {customImages.length > 0
+              ? `Using ${customImages.length} custom image${customImages.length > 1 ? "s" : ""}.`
+              : "Using built-in images. Upload your own to replace them."}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
+            <label style={{ ...btnGreen, display: "inline-block" }}>
+              📤 Upload Images
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => { onUploadImages(e.target.files); e.currentTarget.value = ""; }}
+                style={{ display: "none" }}
+              />
+            </label>
+            {customImages.length > 0 && (
+              <button onClick={resetImages} style={btnGhost}>↩️ Reset to Default Images</button>
+            )}
+          </div>
+          {customImages.length > 0 && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                gap: 8,
+              }}
+            >
+              {customImages.map((src, i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: "relative",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    background: "#000",
+                    aspectRatio: "1/1",
+                  }}
+                >
+                  <img src={src} alt={`custom ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <button
+                    onClick={() => removeCustomImage(i)}
+                    title="Remove"
+                    style={{
+                      position: "absolute",
+                      top: 2,
+                      right: 2,
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: "rgba(231,76,60,0.95)",
+                      color: "#fff",
+                      fontWeight: 900,
+                      cursor: "pointer",
+                      fontSize: 13,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {popupOpen && (
         <div
