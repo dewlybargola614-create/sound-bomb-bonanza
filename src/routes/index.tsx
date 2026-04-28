@@ -242,17 +242,31 @@ function Game() {
               border: `3px solid ${QUAD_COLORS[qIdx]}`,
               borderRadius: 8,
               overflow: "hidden",
-              padding: 4,
+              padding: 6,
+              display: "flex",
+              flexDirection: "column",
             }}
           >
+            <div
+              style={{
+                textAlign: "center",
+                fontWeight: 700,
+                fontSize: 14,
+                letterSpacing: 1,
+                padding: "2px 0 4px",
+                color: "#fff",
+              }}
+            >
+              {TEAM_NAMES[qIdx]}
+            </div>
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: `repeat(${QUADRANT_COLS}, 1fr)`,
                 gridTemplateRows: `repeat(${QUADRANT_ROWS}, 1fr)`,
-                gap: 2,
+                gap: 3,
                 width: "100%",
-                height: "100%",
+                flex: 1,
               }}
             >
               {cells.map((cell, cIdx) => (
