@@ -288,6 +288,11 @@ function Game() {
     return () => window.removeEventListener("keydown", onKey);
   }, [popupOpen]);
 
+  useEffect(() => {
+    if (!startedRef.current || !musicOn) return;
+    if (popupOpen) stopBGM(); else startBGM();
+  }, [popupOpen, musicOn]);
+
   return (
     <div style={{ fontFamily: "Arial, sans-serif", margin: 0, background: "#0f2a3a", color: "white", minHeight: "100vh" }}>
       <div style={{ textAlign: "center", padding: 10, fontSize: 20, fontWeight: 700, position: "relative" }}>
