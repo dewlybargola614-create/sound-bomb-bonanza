@@ -323,9 +323,60 @@ function Game() {
       setWheelAngle(a);
       if (now - lastTick > 60) { SFX.spinTick(); lastTick = now; }
       if (t < 1) requestAnimationFrame(step);
-      else { setSpinning(false); setWheelResult(result); SFX.spinEnd(); }
-    };
     requestAnimationFrame(step);
+  };
+
+  const toggleEdit = () => {
+    SFX.click();
+    setEditMode((m) => !m);
+  };
+
+  const newGame = () => {
+    SFX.click();
+    setQuads((prev) =>
+      prev.map((g) => g.map((c) => ({ ...c, hit: false, revealed: false }))),
+    );
+    setBursts(Array.from({ length: QUADRANTS }, () => []));
+  };
+
+  const shuffleHouses = () => {
+    SFX.click();
+    setQuads(Array.from({ length: QUADRANTS }, () => makeQuadrant()));
+  };
+
+  const onUploadImages = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const readers = Array.from(files).map(
+      (f) =>
+        new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = reject;
+          r.readAsDataURL(f);
+        }),
+    );
+    Promise.all(readers).then((dataUrls) => {
+      setCustomImages((prev) => {
+        const next = [...prev, ...dataUrls];
+        try { localStorage.setItem("fmg_custom_images", JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+      });
+    });
+  };
+
+  const removeCustomImage = (idx: number) => {
+    SFX.click();
+    setCustomImages((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      try { localStorage.setItem("fmg_custom_images", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const resetImages = () => {
+    SFX.click();
+    setCustomImages([]);
+    try { localStorage.removeItem("fmg_custom_images"); } catch { /* ignore */ }
   };
 
   useEffect(() => {
