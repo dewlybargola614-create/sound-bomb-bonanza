@@ -1,305 +1,286 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
   component: Game,
 });
 
-// ---------- Audio (Web Audio API) ----------
-type SFXCtx = { ctx: AudioContext | null };
-const audio: SFXCtx = { ctx: null };
-
+/* ---------------- Audio (Web Audio API) ---------------- */
+const audio: { ctx: AudioContext | null } = { ctx: null };
 function getCtx() {
   if (!audio.ctx) {
     const AC =
-      (window as unknown as { AudioContext: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
-        .AudioContext ||
+      (window as unknown as { AudioContext: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext ||
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     audio.ctx = new AC();
   }
   if (audio.ctx.state === "suspended") void audio.ctx.resume();
   return audio.ctx;
 }
-
 function tone(freq: number, dur = 0.2, type: OscillatorType = "sine", vol = 0.25, delay = 0) {
   const ctx = getCtx();
   const t0 = ctx.currentTime + delay;
   const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+  const g = ctx.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(freq, t0);
-  gain.gain.setValueAtTime(0, t0);
-  gain.gain.linearRampToValueAtTime(vol, t0 + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(t0);
-  osc.stop(t0 + dur + 0.05);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(ctx.destination);
+  osc.start(t0); osc.stop(t0 + dur + 0.05);
 }
-
 function sweep(f1: number, f2: number, dur = 0.3, type: OscillatorType = "sawtooth", vol = 0.25, delay = 0) {
   const ctx = getCtx();
   const t0 = ctx.currentTime + delay;
   const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+  const g = ctx.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(f1, t0);
   osc.frequency.exponentialRampToValueAtTime(Math.max(1, f2), t0 + dur);
-  gain.gain.setValueAtTime(0, t0);
-  gain.gain.linearRampToValueAtTime(vol, t0 + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(t0);
-  osc.stop(t0 + dur + 0.05);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(ctx.destination);
+  osc.start(t0); osc.stop(t0 + dur + 0.05);
 }
-
 function noise(dur = 0.3, vol = 0.35, lowpass = 1200, delay = 0) {
   const ctx = getCtx();
   const t0 = ctx.currentTime + delay;
-  const bufSize = Math.floor(ctx.sampleRate * dur);
-  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
+  const n = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
   const src = ctx.createBufferSource();
   src.buffer = buf;
-  const filter = ctx.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.value = lowpass;
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(vol, t0);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  src.connect(filter).connect(gain).connect(ctx.destination);
-  src.start(t0);
-  src.stop(t0 + dur + 0.05);
+  const f = ctx.createBiquadFilter();
+  f.type = "lowpass"; f.frequency.value = lowpass;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(f).connect(g).connect(ctx.destination);
+  src.start(t0); src.stop(t0 + dur + 0.05);
 }
-
 const SFX = {
-  explosion() {
-    noise(0.5, 0.55, 800);
-    sweep(220, 50, 0.45, "sawtooth", 0.45);
-    tone(90, 0.35, "square", 0.25, 0.05);
-    tone(55, 0.6, "triangle", 0.3, 0.08);
-  },
-  miss() {
-    tone(180, 0.2, "triangle", 0.18);
-    noise(0.18, 0.15, 600, 0.05);
-  },
-  reveal() {
-    tone(523, 0.1, "triangle", 0.2);
-    tone(659, 0.1, "triangle", 0.2, 0.1);
-    tone(784, 0.18, "triangle", 0.22, 0.2);
-  },
-  close() {
-    tone(440, 0.08, "sine", 0.18);
-    tone(330, 0.12, "sine", 0.18, 0.08);
-  },
-  click() {
-    tone(700, 0.05, "square", 0.15);
-  },
-  blip() {
-    tone(900, 0.04, "sine", 0.1);
-  },
-  spinTick() {
-    tone(1200, 0.03, "square", 0.1);
-  },
-  spinEnd() {
-    tone(523, 0.12, "triangle", 0.25);
-    tone(659, 0.12, "triangle", 0.25, 0.12);
-    tone(784, 0.12, "triangle", 0.25, 0.24);
-    tone(1047, 0.25, "triangle", 0.28, 0.36);
-  },
-  start() {
-    tone(523, 0.12, "triangle", 0.22);
-    tone(659, 0.12, "triangle", 0.22, 0.12);
-    tone(784, 0.2, "triangle", 0.25, 0.24);
-  },
+  explosion() { noise(0.5, 0.55, 800); sweep(220, 50, 0.45, "sawtooth", 0.45); tone(90, 0.35, "square", 0.25, 0.05); tone(55, 0.6, "triangle", 0.3, 0.08); },
+  miss() { tone(180, 0.15, "triangle", 0.18); noise(0.15, 0.12, 600, 0.03); },
+  whoosh() { sweep(900, 200, 0.25, "sine", 0.2); },
+  click() { tone(700, 0.05, "square", 0.15); },
+  blip() { tone(900, 0.04, "sine", 0.08); },
+  reveal() { tone(523, 0.09, "triangle", 0.2); tone(659, 0.09, "triangle", 0.2, 0.09); tone(784, 0.16, "triangle", 0.22, 0.18); },
+  spinTick() { tone(1200, 0.025, "square", 0.09); },
+  spinEnd() { tone(523, 0.1, "triangle", 0.25); tone(659, 0.1, "triangle", 0.25, 0.1); tone(784, 0.1, "triangle", 0.25, 0.2); tone(1047, 0.22, "triangle", 0.28, 0.3); },
 };
 
-// ---------- Game ----------
-const TEAMS = [
-  { name: "Team 1", color: "#ef4444" },
-  { name: "Team 2", color: "#3b82f6" },
-  { name: "Team 3", color: "#22c55e" },
-  { name: "Team 4", color: "#eab308" },
-  { name: "Team 5", color: "#a855f7" },
-  { name: "Team 6", color: "#f97316" },
-];
+/* ---------------- Config ---------------- */
+const QUADRANT_COLS = 10;
+const QUADRANT_ROWS = 8;
+const HOUSES_PER_QUADRANT = 6;
+const QUADRANTS = 6;
 
-const GRID_COLS = 8;
-const GRID_ROWS = 6;
+const QUAD_COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#e67e22"];
 
-type CellState = "intact" | "hit";
+type Cell = { hit: boolean; house: boolean; revealed: boolean };
 
-function makeGrid(): CellState[] {
-  return Array.from({ length: GRID_COLS * GRID_ROWS }, () => "intact");
+function makeQuadrant(): Cell[] {
+  const total = QUADRANT_COLS * QUADRANT_ROWS;
+  const cells: Cell[] = Array.from({ length: total }, () => ({ hit: false, house: false, revealed: false }));
+  const idxs = new Set<number>();
+  while (idxs.size < HOUSES_PER_QUADRANT) idxs.add(Math.floor(Math.random() * total));
+  idxs.forEach((i) => (cells[i].house = true));
+  return cells;
 }
 
-type Explosion = { id: number; x: number; y: number };
+type Burst = { id: number; x: number; y: number };
 
 function Game() {
-  const [grids, setGrids] = useState<CellState[][]>(() => TEAMS.map(() => makeGrid()));
-  const [explosions, setExplosions] = useState<Explosion[]>([]);
+  const [quads, setQuads] = useState<Cell[][]>(() => Array.from({ length: QUADRANTS }, () => makeQuadrant()));
+  const [bursts, setBursts] = useState<Burst[][]>(() => Array.from({ length: QUADRANTS }, () => []));
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupImg, setPopupImg] = useState<string | null>(null);
   const [wheelOpen, setWheelOpen] = useState(false);
-  const [wheelResult, setWheelResult] = useState<number | null>(null);
-  const [spinning, setSpinning] = useState(false);
   const [wheelAngle, setWheelAngle] = useState(0);
-  const startedRef = useRef(false);
-  const explosionIdRef = useRef(0);
+  const [spinning, setSpinning] = useState(false);
+  const [wheelResult, setWheelResult] = useState<number | null>(null);
 
+  const burstIdRef = useRef(0);
+  const startedRef = useRef(false);
   const ensureStarted = useCallback(() => {
-    if (!startedRef.current) {
-      startedRef.current = true;
-      SFX.start();
-    }
+    if (!startedRef.current) { startedRef.current = true; SFX.click(); }
   }, []);
 
-  const handleCellClick = useCallback(
-    (teamIdx: number, cellIdx: number, e: React.MouseEvent<HTMLButtonElement>) => {
-      ensureStarted();
-      setGrids((prev) => {
-        const next = prev.map((g) => g.slice());
-        if (next[teamIdx][cellIdx] === "hit") {
-          SFX.miss();
-          return prev;
-        }
-        next[teamIdx][cellIdx] = "hit";
-        return next;
-      });
-      // Explosion burst at click position
-      const rect = (e.currentTarget.closest(".board") as HTMLElement).getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const id = ++explosionIdRef.current;
-      setExplosions((ex) => [...ex, { id, x, y }]);
-      SFX.explosion();
-      window.setTimeout(() => {
-        setExplosions((ex) => ex.filter((ee) => ee.id !== id));
-      }, 900);
-    },
-    [ensureStarted],
+  const images = useMemo(
+    () => ["apple", "banana", "cherry", "grape", "lemon", "orange", "pear", "pineapple", "strawberry", "watermelon"],
+    [],
   );
 
-  const openQuestion = useCallback(() => {
+  const addBurst = (qIdx: number, x: number, y: number) => {
+    const id = ++burstIdRef.current;
+    setBursts((prev) => {
+      const next = prev.map((a) => a.slice());
+      next[qIdx] = [...next[qIdx], { id, x, y }];
+      return next;
+    });
+    window.setTimeout(() => {
+      setBursts((prev) => {
+        const next = prev.map((a) => a.slice());
+        next[qIdx] = next[qIdx].filter((b) => b.id !== id);
+        return next;
+      });
+    }, 950);
+  };
+
+  const handleCellClick = (qIdx: number, cIdx: number, e: React.MouseEvent<HTMLDivElement>) => {
     ensureStarted();
-    const n = Math.floor(Math.random() * 20) + 1;
-    setPopupImg(`questions/${n}.png`);
-    setPopupOpen(true);
+    const target = e.currentTarget;
+    const board = target.closest(".quadrant") as HTMLElement | null;
+    if (!board) return;
+    const rect = board.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    let wasHouseHit = false;
+    setQuads((prev) => {
+      const next = prev.map((g) => g.map((c) => ({ ...c })));
+      const cell = next[qIdx][cIdx];
+      if (cell.hit) return prev;
+      cell.hit = true;
+      if (cell.house) { cell.revealed = true; wasHouseHit = true; }
+      return next;
+    });
+
+    if (wasHouseHit) {
+      addBurst(qIdx, x, y);
+      SFX.explosion();
+    } else {
+      SFX.miss();
+    }
+  };
+
+  const openQuestion = () => {
+    ensureStarted();
+    SFX.click();
+    const name = images[Math.floor(Math.random() * images.length)];
+    setPopupImg(`questions/${name}.png`);
     setWheelOpen(false);
     setWheelResult(null);
-    window.setTimeout(() => SFX.reveal(), 120);
-  }, [ensureStarted]);
+    setPopupOpen(true);
+    window.setTimeout(() => { SFX.whoosh(); SFX.reveal(); }, 120);
+  };
 
-  const closePopup = useCallback(() => {
-    SFX.close();
+  const closePopup = () => {
+    SFX.click();
     setPopupOpen(false);
     setWheelOpen(false);
     setWheelResult(null);
-  }, []);
+  };
 
-  const openWheel = useCallback(() => {
-    SFX.click();
-    setWheelOpen(true);
-    setWheelResult(null);
-  }, []);
+  const openWheel = () => { SFX.click(); setWheelOpen(true); setWheelResult(null); };
 
-  const spinWheel = useCallback(() => {
+  const spinWheel = () => {
     if (spinning) return;
     SFX.click();
     setSpinning(true);
     setWheelResult(null);
-    const result = Math.floor(Math.random() * 5) + 1; // 1..5
-    // wheel has 5 segments, each 72deg. Segment i center angle = i*72 + 36
-    // We want the pointer (top, 0deg) to point at the chosen segment center.
+    const result = Math.floor(Math.random() * 5) + 1;
     const segCenter = (result - 1) * 72 + 36;
     const spins = 6;
     const finalAngle = 360 * spins + (360 - segCenter);
-    const duration = 3200;
+    const duration = 1800; // faster
     const start = performance.now();
     const from = wheelAngle % 360;
     const to = from + (finalAngle - from);
     let lastTick = 0;
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
-      // ease out cubic
       const eased = 1 - Math.pow(1 - t, 3);
       const a = from + (to - from) * eased;
       setWheelAngle(a);
-      if (now - lastTick > 90) {
-        SFX.spinTick();
-        lastTick = now;
-      }
+      if (now - lastTick > 60) { SFX.spinTick(); lastTick = now; }
       if (t < 1) requestAnimationFrame(step);
-      else {
-        setSpinning(false);
-        setWheelResult(result);
-        SFX.spinEnd();
-      }
+      else { setSpinning(false); setWheelResult(result); SFX.spinEnd(); }
     };
     requestAnimationFrame(step);
-  }, [spinning, wheelAngle]);
+  };
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && popupOpen) closePopup();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && popupOpen) closePopup(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [popupOpen, closePopup]);
+  }, [popupOpen]);
 
   return (
-    <div className="min-h-screen bg-[#0f2a3a] text-white">
-      <header className="text-center py-3">
-        <h1 className="text-2xl font-bold tracking-wide">🍉 Fruit Missile Game 🚀</h1>
-        <p className="text-sm opacity-80">Click an enemy tile to strike. Hit the question box for a bonus!</p>
-      </header>
+    <div style={{ fontFamily: "Arial, sans-serif", margin: 0, background: "#0f2a3a", color: "white", minHeight: "100vh" }}>
+      <div style={{ textAlign: "center", padding: 10, fontSize: 20, fontWeight: 700 }}>
+        🍉 Fruit Missile Game 🚀
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3">
-        {TEAMS.map((team, tIdx) => (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateRows: "1fr 1fr",
+          height: "85vh",
+          gap: 4,
+          padding: 4,
+        }}
+      >
+        {quads.map((cells, qIdx) => (
           <div
-            key={team.name}
-            className="board relative rounded-lg overflow-hidden shadow-lg border border-white/10"
-            style={{ background: "rgba(255,255,255,0.04)" }}
+            key={qIdx}
+            className="quadrant"
+            style={{
+              position: "relative",
+              background: "#143447",
+              border: `3px solid ${QUAD_COLORS[qIdx]}`,
+              borderRadius: 8,
+              overflow: "hidden",
+              padding: 4,
+            }}
           >
             <div
-              className="flex items-center justify-between px-3 py-2 text-sm font-semibold"
-              style={{ background: team.color }}
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${QUADRANT_COLS}, 1fr)`,
+                gridTemplateRows: `repeat(${QUADRANT_ROWS}, 1fr)`,
+                gap: 2,
+                width: "100%",
+                height: "100%",
+              }}
             >
-              <span>{team.name}</span>
-              <span className="opacity-80 text-xs">
-                {grids[tIdx].filter((c) => c === "hit").length}/{GRID_COLS * GRID_ROWS}
-              </span>
-            </div>
-            <div
-              className="grid gap-[3px] p-2"
-              style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0,1fr))` }}
-            >
-              {grids[tIdx].map((cell, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => handleCellClick(tIdx, i, e)}
+              {cells.map((cell, cIdx) => (
+                <div
+                  key={cIdx}
+                  onClick={(e) => handleCellClick(qIdx, cIdx, e)}
                   onMouseEnter={() => SFX.blip()}
-                  className={`aspect-square rounded-sm transition-transform ${
-                    cell === "hit"
-                      ? "bg-black/70 animate-[shake_0.4s_ease]"
-                      : "bg-white/15 hover:bg-white/30 hover:scale-110"
-                  }`}
-                  aria-label={cell === "hit" ? "hit tile" : "intact tile"}
+                  style={{
+                    background: cell.revealed
+                      ? "#c0392b"
+                      : cell.hit
+                        ? "#2c3e50"
+                        : "#1e5a7a",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    cursor: cell.hit ? "default" : "pointer",
+                    transition: "background 0.15s, transform 0.1s",
+                    animation: cell.revealed ? "shake 0.4s ease" : undefined,
+                  }}
+                  onMouseDown={(e) => {
+                    if (!cell.hit) (e.currentTarget as HTMLDivElement).style.transform = "scale(0.92)";
+                  }}
+                  onMouseUp={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
+                  }}
                 />
               ))}
             </div>
 
-            {/* Explosions layer */}
-            <div className="pointer-events-none absolute inset-0">
-              {explosions.map((ex) => (
-                <div
-                  key={ex.id}
-                  className="absolute"
-                  style={{ left: ex.x, top: ex.y, transform: "translate(-50%, -50%)" }}
-                >
-                  <div className="explosion" />
-                  <div className="explosion-ring" />
-                  <div className="explosion-text">💥 BOOM!</div>
+            {/* Burst overlay */}
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+              {bursts[qIdx].map((b) => (
+                <div key={b.id} style={{ position: "absolute", left: b.x, top: b.y, transform: "translate(-50%,-50%)" }}>
+                  <div className="boom-core" />
+                  <div className="boom-ring" />
+                  <div className="boom-text">💥 BOOM!</div>
                 </div>
               ))}
             </div>
@@ -307,78 +288,81 @@ function Game() {
         ))}
       </div>
 
-      <div className="flex justify-center pb-6">
+      <div style={{ textAlign: "center", padding: 10 }}>
         <button
           onClick={openQuestion}
-          className="px-6 py-3 rounded-full font-bold text-black bg-yellow-400 hover:bg-yellow-300 shadow-lg hover:scale-105 transition"
+          style={{
+            background: "#f1c40f",
+            color: "#000",
+            border: "none",
+            padding: "10px 22px",
+            borderRadius: 24,
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          }}
         >
-          🎯 Draw a Question
+          🎯 Question
         </button>
       </div>
 
-      {/* Question Popup */}
       {popupOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-[fadeIn_0.2s_ease]"
           onClick={closePopup}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 50, animation: "fadeIn 0.2s ease",
+          }}
         >
           <div
-            className="bg-[#14384d] rounded-xl p-5 max-w-[90vw] max-h-[90vh] shadow-2xl border border-white/10 animate-[scaleIn_0.25s_ease]"
             onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#14384d", padding: 20, borderRadius: 12,
+              boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+              maxWidth: "90vw", maxHeight: "90vh",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 14,
+              animation: "scaleIn 0.25s ease",
+            }}
           >
             {!wheelOpen ? (
               <>
                 <img
                   src={popupImg ?? ""}
-                  alt="Question"
-                  className="max-w-[70vw] max-h-[60vh] rounded"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
-                  }}
+                  alt="question"
+                  style={{ maxWidth: "70vw", maxHeight: "60vh", borderRadius: 6 }}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                 />
-                <div className="flex gap-3 justify-center mt-4">
-                  <button
-                    onClick={openWheel}
-                    className="px-5 py-2 rounded-full font-bold bg-emerald-500 hover:bg-emerald-400 text-black shadow hover:scale-105 transition"
-                  >
-                    🎡 Spin the Wheel
-                  </button>
-                  <button
-                    onClick={closePopup}
-                    className="px-5 py-2 rounded-full font-semibold bg-white/10 hover:bg-white/20 transition"
-                  >
-                    Close
-                  </button>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={openWheel} style={btnGreen}>🎡 Spin the Wheel</button>
+                  <button onClick={closePopup} style={btnGhost}>Close</button>
                 </div>
               </>
             ) : (
-              <div className="flex flex-col items-center gap-4">
-                <h2 className="text-xl font-bold">Spin for your hits!</h2>
-                <div className="relative w-[280px] h-[280px]">
-                  {/* Pointer */}
+              <>
+                <h2 style={{ margin: 0, fontSize: 20 }}>Spin for your hits!</h2>
+                <div style={{ position: "relative", width: 260, height: 260 }}>
                   <div
-                    className="absolute left-1/2 -top-2 -translate-x-1/2 z-10"
                     style={{
-                      width: 0,
-                      height: 0,
-                      borderLeft: "14px solid transparent",
-                      borderRight: "14px solid transparent",
-                      borderTop: "24px solid #ef4444",
+                      position: "absolute", left: "50%", top: -6, transform: "translateX(-50%)",
+                      width: 0, height: 0,
+                      borderLeft: "12px solid transparent",
+                      borderRight: "12px solid transparent",
+                      borderTop: "22px solid #e74c3c",
                       filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.5))",
+                      zIndex: 2,
                     }}
                   />
                   <div
-                    className="w-full h-full rounded-full border-4 border-white shadow-2xl"
                     style={{
+                      width: "100%", height: "100%", borderRadius: "50%",
+                      border: "4px solid white", boxShadow: "0 8px 20px rgba(0,0,0,0.4)",
                       transform: `rotate(${wheelAngle}deg)`,
-                      transition: spinning ? "none" : "transform 0.2s",
-                      background: `conic-gradient(
-                        #ef4444 0deg 72deg,
-                        #3b82f6 72deg 144deg,
-                        #22c55e 144deg 216deg,
-                        #eab308 216deg 288deg,
-                        #a855f7 288deg 360deg
-                      )`,
+                      transition: spinning ? "none" : "transform 0.15s",
+                      background:
+                        "conic-gradient(#e74c3c 0deg 72deg,#3498db 72deg 144deg,#2ecc71 144deg 216deg,#f1c40f 216deg 288deg,#9b59b6 288deg 360deg)",
+                      position: "relative",
                     }}
                   >
                     {[1, 2, 3, 4, 5].map((n) => {
@@ -386,9 +370,11 @@ function Game() {
                       return (
                         <div
                           key={n}
-                          className="absolute left-1/2 top-1/2 text-white font-black text-2xl drop-shadow"
                           style={{
-                            transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-95px) rotate(${-angle}deg)`,
+                            position: "absolute", left: "50%", top: "50%",
+                            color: "white", fontWeight: 900, fontSize: 22,
+                            textShadow: "0 2px 2px rgba(0,0,0,0.5)",
+                            transform: `translate(-50%,-50%) rotate(${angle}deg) translateY(-88px) rotate(${-angle}deg)`,
                           }}
                         >
                           {n}
@@ -396,38 +382,33 @@ function Game() {
                       );
                     })}
                   </div>
-                  {/* Center hub */}
-                  <div className="absolute left-1/2 top-1/2 w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white border-2 border-gray-400" />
+                  <div
+                    style={{
+                      position: "absolute", left: "50%", top: "50%",
+                      width: 22, height: 22, borderRadius: "50%",
+                      background: "white", border: "2px solid #888",
+                      transform: "translate(-50%,-50%)",
+                    }}
+                  />
                 </div>
 
                 {wheelResult !== null && !spinning && (
-                  <div className="text-center animate-[scaleIn_0.3s_ease]">
-                    <div className="text-lg">You get</div>
-                    <div className="text-5xl font-black text-yellow-300 drop-shadow">
-                      {wheelResult}
-                    </div>
-                    <div className="text-sm opacity-80">
+                  <div style={{ textAlign: "center", animation: "scaleIn 0.3s ease" }}>
+                    <div>You get</div>
+                    <div style={{ fontSize: 44, fontWeight: 900, color: "#f1c40f" }}>{wheelResult}</div>
+                    <div style={{ fontSize: 13, opacity: 0.85 }}>
                       hit{wheelResult > 1 ? "s" : ""} on other teams!
                     </div>
                   </div>
                 )}
 
-                <div className="flex gap-3">
-                  <button
-                    disabled={spinning}
-                    onClick={spinWheel}
-                    className="px-5 py-2 rounded-full font-bold bg-yellow-400 hover:bg-yellow-300 text-black shadow disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition"
-                  >
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={spinWheel} disabled={spinning} style={{ ...btnYellow, opacity: spinning ? 0.6 : 1, cursor: spinning ? "not-allowed" : "pointer" }}>
                     {wheelResult === null ? "🎯 Spin!" : "🔁 Spin Again"}
                   </button>
-                  <button
-                    onClick={closePopup}
-                    className="px-5 py-2 rounded-full font-semibold bg-white/10 hover:bg-white/20 transition"
-                  >
-                    Done
-                  </button>
+                  <button onClick={closePopup} style={btnGhost}>Done</button>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -441,43 +422,52 @@ function Game() {
           60%{transform:translate(-1px,2px)}
           80%{transform:translate(1px,-2px)}
         }
-        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-        @keyframes scaleIn { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
-        @keyframes boom {
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes scaleIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+        @keyframes boomCore{
           0%{transform:scale(.2);opacity:1}
           60%{transform:scale(1.4);opacity:.9}
-          100%{transform:scale(2);opacity:0}
+          100%{transform:scale(2.2);opacity:0}
         }
-        @keyframes ring {
+        @keyframes boomRing{
           0%{transform:scale(.3);opacity:.8;border-width:8px}
-          100%{transform:scale(2.6);opacity:0;border-width:1px}
+          100%{transform:scale(2.8);opacity:0;border-width:1px}
         }
-        @keyframes boomText {
+        @keyframes boomText{
           0%{transform:translate(-50%,-50%) scale(.4);opacity:0}
           30%{transform:translate(-50%,-90%) scale(1.2);opacity:1}
           100%{transform:translate(-50%,-160%) scale(.9);opacity:0}
         }
-        .explosion{
-          width:80px;height:80px;border-radius:50%;
-          background: radial-gradient(circle, #fff 0%, #ffeb3b 25%, #ff9800 55%, #f44336 80%, transparent 100%);
-          animation: boom .9s ease-out forwards;
-          filter: blur(1px);
-          box-shadow: 0 0 40px 10px rgba(255,152,0,.6);
+        .boom-core{
+          width:70px;height:70px;border-radius:50%;
+          background:radial-gradient(circle,#fff 0%,#ffeb3b 25%,#ff9800 55%,#f44336 80%,transparent 100%);
+          animation:boomCore .9s ease-out forwards;
+          filter:blur(1px);
+          box-shadow:0 0 35px 8px rgba(255,152,0,.6);
         }
-        .explosion-ring{
-          position:absolute;left:50%;top:50%;width:80px;height:80px;
-          margin-left:-40px;margin-top:-40px;
-          border:4px solid #fff; border-radius:50%;
-          animation: ring .9s ease-out forwards;
+        .boom-ring{
+          position:absolute;left:50%;top:50%;width:70px;height:70px;
+          margin-left:-35px;margin-top:-35px;
+          border:4px solid #fff;border-radius:50%;
+          animation:boomRing .9s ease-out forwards;
         }
-        .explosion-text{
+        .boom-text{
           position:absolute;left:50%;top:50%;
-          font-weight:900;font-size:20px;color:#fff;
-          text-shadow: 0 0 8px #f44336, 0 2px 0 #000;
-          animation: boomText .9s ease-out forwards;
+          font-weight:900;font-size:18px;color:#fff;
+          text-shadow:0 0 8px #f44336,0 2px 0 #000;
+          animation:boomText .9s ease-out forwards;
           white-space:nowrap;
         }
       `}</style>
     </div>
   );
 }
+
+const btnBase: React.CSSProperties = {
+  border: "none", padding: "10px 18px", borderRadius: 22,
+  fontWeight: 700, cursor: "pointer", fontSize: 14,
+  boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
+};
+const btnGreen: React.CSSProperties = { ...btnBase, background: "#2ecc71", color: "#000" };
+const btnYellow: React.CSSProperties = { ...btnBase, background: "#f1c40f", color: "#000" };
+const btnGhost: React.CSSProperties = { ...btnBase, background: "rgba(255,255,255,0.12)", color: "#fff" };
