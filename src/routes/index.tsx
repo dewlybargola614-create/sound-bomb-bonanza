@@ -75,7 +75,7 @@ const SFX = {
 /* ---------------- Config ---------------- */
 const QUADRANT_COLS = 5;
 const QUADRANT_ROWS = 5;
-const HOUSES_PER_QUADRANT = 2;
+const HOUSES_PER_QUADRANT = 6;
 const QUADRANTS = 6;
 
 const QUAD_COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#e67e22"];
