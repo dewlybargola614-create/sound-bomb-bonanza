@@ -489,7 +489,9 @@ function Game() {
                     (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
                   }}
                 >
-                  {cell.revealed ? (
+                  {editMode ? (
+                    <span style={{ fontSize: "clamp(14px, 2.2vw, 22px)" }}>{cell.house ? "🏠" : ""}</span>
+                  ) : cell.revealed ? (
                     <span>💥🏠</span>
                   ) : cell.hit ? (
                     <span style={{ color: "#e74c3c", fontWeight: 900 }}>❌</span>
