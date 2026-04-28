@@ -80,7 +80,7 @@ const QUADRANTS = 6;
 
 const QUAD_COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#e67e22"];
 const TEAM_NAMES = ["TEAM 1", "TEAM 2", "TEAM 3", "TEAM 4", "TEAM 5", "TEAM 6"];
-const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍋", "🍉", "🍑", "🍒", "🍍", "🥝", "🫐"];
+const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍋", "🍉", "🍑", "🍒", "🍍"];
 
 type Cell = { hit: boolean; house: boolean; revealed: boolean; fruit: string };
 
