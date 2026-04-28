@@ -72,6 +72,60 @@ const SFX = {
   spinEnd() { tone(523, 0.1, "triangle", 0.25); tone(659, 0.1, "triangle", 0.25, 0.1); tone(784, 0.1, "triangle", 0.25, 0.2); tone(1047, 0.22, "triangle", 0.28, 0.3); },
 };
 
+/* ---------------- Background Music ---------------- */
+const BGM: {
+  master: GainNode | null;
+  timer: number | null;
+  step: number;
+  playing: boolean;
+} = { master: null, timer: null, step: 0, playing: false };
+
+// Cheerful C major pentatonic-ish loop (bouncy, not overwhelming)
+const BGM_MELODY = [523, 659, 784, 659, 880, 784, 659, 523, 587, 659, 784, 1047, 880, 784, 659, 587];
+const BGM_BASS = [131, 131, 196, 196, 175, 175, 147, 147];
+
+function bgmNote(freq: number, dur: number, type: OscillatorType, vol: number, dest: GainNode) {
+  const ctx = getCtx();
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(dest);
+  osc.start(t0); osc.stop(t0 + dur + 0.05);
+}
+
+function startBGM() {
+  if (BGM.playing) return;
+  const ctx = getCtx();
+  if (!BGM.master) {
+    BGM.master = ctx.createGain();
+    BGM.master.gain.value = 0.08; // soft
+    BGM.master.connect(ctx.destination);
+  }
+  BGM.playing = true;
+  const tickMs = 220;
+  const tick = () => {
+    if (!BGM.playing || !BGM.master) return;
+    const s = BGM.step;
+    bgmNote(BGM_MELODY[s % BGM_MELODY.length], 0.28, "triangle", 0.35, BGM.master);
+    if (s % 2 === 0) {
+      bgmNote(BGM_BASS[(s / 2) % BGM_BASS.length], 0.4, "sine", 0.5, BGM.master);
+    }
+    BGM.step = (s + 1) % (BGM_MELODY.length * 2);
+    BGM.timer = window.setTimeout(tick, tickMs);
+  };
+  tick();
+}
+
+function stopBGM() {
+  BGM.playing = false;
+  if (BGM.timer) { clearTimeout(BGM.timer); BGM.timer = null; }
+}
+
 /* ---------------- Config ---------------- */
 const QUADRANT_COLS = 5;
 const QUADRANT_ROWS = 5;
@@ -115,9 +169,23 @@ function Game() {
 
   const burstIdRef = useRef(0);
   const startedRef = useRef(false);
+  const [musicOn, setMusicOn] = useState(true);
   const ensureStarted = useCallback(() => {
-    if (!startedRef.current) { startedRef.current = true; SFX.click(); }
-  }, []);
+    if (!startedRef.current) {
+      startedRef.current = true;
+      SFX.click();
+      if (musicOn) startBGM();
+    }
+  }, [musicOn]);
+
+  const toggleMusic = () => {
+    SFX.click();
+    setMusicOn((on) => {
+      const next = !on;
+      if (next) startBGM(); else stopBGM();
+      return next;
+    });
+  };
 
   const images = useMemo(
     () => Array.from({ length: 15 }, (_, i) => `q${i + 1}`),
@@ -222,8 +290,20 @@ function Game() {
 
   return (
     <div style={{ fontFamily: "Arial, sans-serif", margin: 0, background: "#0f2a3a", color: "white", minHeight: "100vh" }}>
-      <div style={{ textAlign: "center", padding: 10, fontSize: 20, fontWeight: 700 }}>
+      <div style={{ textAlign: "center", padding: 10, fontSize: 20, fontWeight: 700, position: "relative" }}>
         🍉 Fruit Missile Game 🚀
+        <button
+          onClick={toggleMusic}
+          title={musicOn ? "Mute music" : "Play music"}
+          style={{
+            position: "absolute", right: 12, top: 8,
+            background: "rgba(255,255,255,0.12)", color: "white",
+            border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8,
+            padding: "4px 10px", fontSize: 16, cursor: "pointer",
+          }}
+        >
+          {musicOn ? "🔊 Music" : "🔇 Music"}
+        </button>
       </div>
 
       <div
