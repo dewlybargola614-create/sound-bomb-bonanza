@@ -464,16 +464,18 @@ function Game() {
                   onMouseEnter={() => SFX.blip()}
                   style={{
                     position: "relative",
-                    background: cell.revealed
-                      ? "#e74c3c"
-                      : cell.hit
-                        ? "#2c3e50"
-                        : "#2d6b8a",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: editMode
+                      ? (cell.house ? "#f1c40f" : "#2d6b8a")
+                      : cell.revealed
+                        ? "#e74c3c"
+                        : cell.hit
+                          ? "#2c3e50"
+                          : "#2d6b8a",
+                    border: editMode && cell.house ? "2px solid #fff" : "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 3,
-                    cursor: cell.hit ? "default" : "pointer",
+                    cursor: editMode ? "pointer" : cell.hit ? "default" : "pointer",
                     transition: "background 0.15s, transform 0.1s",
-                    animation: cell.revealed ? "shake 0.4s ease" : undefined,
+                    animation: cell.revealed && !editMode ? "shake 0.4s ease" : undefined,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
