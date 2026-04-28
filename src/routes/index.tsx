@@ -382,14 +382,36 @@ function Game() {
           >
             {!wheelOpen ? (
               <>
-                <img
-                  src={popupImg ?? ""}
-                  alt="question"
-                  style={{ maxWidth: "70vw", maxHeight: "60vh", borderRadius: 6 }}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                />
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <img
+                    src={popupImg ?? ""}
+                    alt="question"
+                    style={{ maxWidth: "70vw", maxHeight: "60vh", borderRadius: 6, display: "block" }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <button
+                    onClick={openWheel}
+                    style={{
+                      position: "absolute",
+                      bottom: 10,
+                      right: 10,
+                      background: "#2ecc71",
+                      color: "#000",
+                      border: "none",
+                      padding: "8px 14px",
+                      borderRadius: 20,
+                      fontWeight: 700,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    🎡 Spin the Wheel
+                  </button>
+                </div>
                 <div style={{ display: "flex", gap: 10 }}>
-                  <button onClick={openWheel} style={btnGreen}>🎡 Spin the Wheel</button>
                   <button onClick={closePopup} style={btnGhost}>Close</button>
                 </div>
               </>
