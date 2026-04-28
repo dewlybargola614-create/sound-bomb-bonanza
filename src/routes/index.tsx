@@ -73,18 +73,25 @@ const SFX = {
 };
 
 /* ---------------- Config ---------------- */
-const QUADRANT_COLS = 10;
-const QUADRANT_ROWS = 8;
-const HOUSES_PER_QUADRANT = 6;
+const QUADRANT_COLS = 5;
+const QUADRANT_ROWS = 5;
+const HOUSES_PER_QUADRANT = 2;
 const QUADRANTS = 6;
 
 const QUAD_COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#e67e22"];
+const TEAM_NAMES = ["TEAM 1", "TEAM 2", "TEAM 3", "TEAM 4", "TEAM 5", "TEAM 6"];
+const FRUITS = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍋", "🍉", "🍑", "🍒", "🍍", "🥝", "🫐"];
 
-type Cell = { hit: boolean; house: boolean; revealed: boolean };
+type Cell = { hit: boolean; house: boolean; revealed: boolean; fruit: string };
 
 function makeQuadrant(): Cell[] {
   const total = QUADRANT_COLS * QUADRANT_ROWS;
-  const cells: Cell[] = Array.from({ length: total }, () => ({ hit: false, house: false, revealed: false }));
+  const cells: Cell[] = Array.from({ length: total }, () => ({
+    hit: false,
+    house: false,
+    revealed: false,
+    fruit: FRUITS[Math.floor(Math.random() * FRUITS.length)],
+  }));
   const idxs = new Set<number>();
   while (idxs.size < HOUSES_PER_QUADRANT) idxs.add(Math.floor(Math.random() * total));
   idxs.forEach((i) => (cells[i].house = true));
@@ -235,17 +242,31 @@ function Game() {
               border: `3px solid ${QUAD_COLORS[qIdx]}`,
               borderRadius: 8,
               overflow: "hidden",
-              padding: 4,
+              padding: 6,
+              display: "flex",
+              flexDirection: "column",
             }}
           >
+            <div
+              style={{
+                textAlign: "center",
+                fontWeight: 700,
+                fontSize: 14,
+                letterSpacing: 1,
+                padding: "2px 0 4px",
+                color: "#fff",
+              }}
+            >
+              {TEAM_NAMES[qIdx]}
+            </div>
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: `repeat(${QUADRANT_COLS}, 1fr)`,
                 gridTemplateRows: `repeat(${QUADRANT_ROWS}, 1fr)`,
-                gap: 2,
+                gap: 3,
                 width: "100%",
-                height: "100%",
+                flex: 1,
               }}
             >
               {cells.map((cell, cIdx) => (
@@ -254,15 +275,22 @@ function Game() {
                   onClick={(e) => handleCellClick(qIdx, cIdx, e)}
                   onMouseEnter={() => SFX.blip()}
                   style={{
+                    position: "relative",
                     background: cell.revealed
-                      ? "#c0392b"
+                      ? "#e74c3c"
                       : cell.hit
                         ? "#2c3e50"
-                        : "#1e5a7a",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                        : "#2d6b8a",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 3,
                     cursor: cell.hit ? "default" : "pointer",
                     transition: "background 0.15s, transform 0.1s",
                     animation: cell.revealed ? "shake 0.4s ease" : undefined,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "clamp(14px, 2.2vw, 22px)",
+                    userSelect: "none",
                   }}
                   onMouseDown={(e) => {
                     if (!cell.hit) (e.currentTarget as HTMLDivElement).style.transform = "scale(0.92)";
@@ -270,7 +298,29 @@ function Game() {
                   onMouseUp={(e) => {
                     (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
                   }}
-                />
+                >
+                  {cell.revealed ? (
+                    <span>💥🏠</span>
+                  ) : cell.hit ? (
+                    <span style={{ color: "#e74c3c", fontWeight: 900 }}>❌</span>
+                  ) : (
+                    <>
+                      <span>{cell.fruit}</span>
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: 1,
+                          right: 3,
+                          fontSize: "clamp(8px, 1vw, 11px)",
+                          color: "rgba(255,255,255,0.85)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {cIdx + 1}
+                      </span>
+                    </>
+                  )}
+                </div>
               ))}
             </div>
 
