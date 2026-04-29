@@ -187,10 +187,40 @@ function Game() {
     });
   };
 
-  const images = useMemo(
-    () => Array.from({ length: 15 }, (_, i) => `q${i + 1}`),
+  const defaultImages = useMemo(
+    () => Array.from({ length: 15 }, (_, i) => `/questions/q${i + 1}.png`),
     [],
   );
+  // Custom images uploaded by the user (data URLs), persisted to localStorage.
+  const [customImages, setCustomImages] = useState<string[]>([]);
+  const [editMode, setEditMode] = useState(false);
+
+  // Load persisted state on mount
+  useEffect(() => {
+    try {
+      const imgs = localStorage.getItem("fmg_custom_images");
+      if (imgs) setCustomImages(JSON.parse(imgs));
+      const qs = localStorage.getItem("fmg_quads");
+      if (qs) {
+        const parsed = JSON.parse(qs) as Cell[][];
+        if (Array.isArray(parsed) && parsed.length === QUADRANTS) setQuads(parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Persist quads whenever they change (after initial load)
+  useEffect(() => {
+    if (!quads[0] || quads[0].length === 0) return;
+    try {
+      localStorage.setItem("fmg_quads", JSON.stringify(quads));
+    } catch {
+      /* ignore */
+    }
+  }, [quads]);
+
+  const activeImages = customImages.length > 0 ? customImages : defaultImages;
 
   const addBurst = (qIdx: number, x: number, y: number) => {
     const id = ++burstIdRef.current;
@@ -210,6 +240,21 @@ function Game() {
 
   const handleCellClick = (qIdx: number, cIdx: number, e: React.MouseEvent<HTMLDivElement>) => {
     ensureStarted();
+
+    // Edit mode: click toggles whether the cell is a hidden house.
+    if (editMode) {
+      SFX.click();
+      setQuads((prev) => {
+        const next = prev.map((g) => g.map((c) => ({ ...c })));
+        const cell = next[qIdx][cIdx];
+        cell.house = !cell.house;
+        cell.hit = false;
+        cell.revealed = false;
+        return next;
+      });
+      return;
+    }
+
     const board = (e.currentTarget.closest(".quadrant") as HTMLElement | null);
     if (!board) return;
     const rect = board.getBoundingClientRect();
@@ -239,8 +284,9 @@ function Game() {
   const openQuestion = () => {
     ensureStarted();
     SFX.click();
-    const name = images[Math.floor(Math.random() * images.length)];
-    setPopupImg(`/questions/${name}.png`);
+    if (activeImages.length === 0) return;
+    const src = activeImages[Math.floor(Math.random() * activeImages.length)];
+    setPopupImg(src);
     setWheelOpen(false);
     setWheelResult(null);
     setPopupOpen(true);
@@ -280,6 +326,59 @@ function Game() {
       else { setSpinning(false); setWheelResult(result); SFX.spinEnd(); }
     };
     requestAnimationFrame(step);
+  };
+
+  const toggleEdit = () => {
+    SFX.click();
+    setEditMode((m) => !m);
+  };
+
+  const newGame = () => {
+    SFX.click();
+    setQuads((prev) =>
+      prev.map((g) => g.map((c) => ({ ...c, hit: false, revealed: false }))),
+    );
+    setBursts(Array.from({ length: QUADRANTS }, () => []));
+  };
+
+  const shuffleHouses = () => {
+    SFX.click();
+    setQuads(Array.from({ length: QUADRANTS }, () => makeQuadrant()));
+  };
+
+  const onUploadImages = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const readers = Array.from(files).map(
+      (f) =>
+        new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = reject;
+          r.readAsDataURL(f);
+        }),
+    );
+    Promise.all(readers).then((dataUrls) => {
+      setCustomImages((prev) => {
+        const next = [...prev, ...dataUrls];
+        try { localStorage.setItem("fmg_custom_images", JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+      });
+    });
+  };
+
+  const removeCustomImage = (idx: number) => {
+    SFX.click();
+    setCustomImages((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      try { localStorage.setItem("fmg_custom_images", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const resetImages = () => {
+    SFX.click();
+    setCustomImages([]);
+    try { localStorage.removeItem("fmg_custom_images"); } catch { /* ignore */ }
   };
 
   useEffect(() => {
@@ -365,16 +464,18 @@ function Game() {
                   onMouseEnter={() => SFX.blip()}
                   style={{
                     position: "relative",
-                    background: cell.revealed
-                      ? "#e74c3c"
-                      : cell.hit
-                        ? "#2c3e50"
-                        : "#2d6b8a",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: editMode
+                      ? (cell.house ? "#f1c40f" : "#2d6b8a")
+                      : cell.revealed
+                        ? "#e74c3c"
+                        : cell.hit
+                          ? "#2c3e50"
+                          : "#2d6b8a",
+                    border: editMode && cell.house ? "2px solid #fff" : "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 3,
-                    cursor: cell.hit ? "default" : "pointer",
+                    cursor: editMode ? "pointer" : cell.hit ? "default" : "pointer",
                     transition: "background 0.15s, transform 0.1s",
-                    animation: cell.revealed ? "shake 0.4s ease" : undefined,
+                    animation: cell.revealed && !editMode ? "shake 0.4s ease" : undefined,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -388,7 +489,9 @@ function Game() {
                     (e.currentTarget as HTMLDivElement).style.transform = "scale(1)";
                   }}
                 >
-                  {cell.revealed ? (
+                  {editMode ? (
+                    <span style={{ fontSize: "clamp(14px, 2.2vw, 22px)" }}>{cell.house ? "🏠" : ""}</span>
+                  ) : cell.revealed ? (
                     <span>💥🏠</span>
                   ) : cell.hit ? (
                     <span style={{ color: "#e74c3c", fontWeight: 900 }}>❌</span>
@@ -427,24 +530,133 @@ function Game() {
         ))}
       </div>
 
-      <div style={{ textAlign: "center", padding: 10 }}>
+      <div style={{ textAlign: "center", padding: 10, display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
         <button
           onClick={openQuestion}
+          disabled={editMode}
           style={{
-            background: "#f1c40f",
+            background: editMode ? "#7a6a15" : "#f1c40f",
             color: "#000",
             border: "none",
             padding: "10px 22px",
             borderRadius: 24,
             fontWeight: 700,
             fontSize: 15,
-            cursor: "pointer",
+            cursor: editMode ? "not-allowed" : "pointer",
             boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            opacity: editMode ? 0.6 : 1,
           }}
         >
           🎯 Question
         </button>
+        <button
+          onClick={toggleEdit}
+          style={{
+            background: editMode ? "#e74c3c" : "rgba(255,255,255,0.12)",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.25)",
+            padding: "10px 18px",
+            borderRadius: 24,
+            fontWeight: 700,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          {editMode ? "✅ Done Editing" : "✏️ Edit"}
+        </button>
       </div>
+
+      {editMode && (
+        <div
+          style={{
+            margin: "0 12px 16px",
+            padding: 14,
+            background: "rgba(255,255,255,0.06)",
+            border: "1px dashed rgba(255,255,255,0.3)",
+            borderRadius: 10,
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          <div style={{ marginBottom: 10, fontWeight: 700, fontSize: 15 }}>
+            ✏️ Edit Mode
+          </div>
+          <div style={{ marginBottom: 10, opacity: 0.9 }}>
+            Click any cell on the board to <b>add</b> or <b>remove</b> a hidden 🏠.
+            Houses are shown as yellow squares while editing.
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
+            <button onClick={newGame} style={btnGreen}>🔄 New Round (keep houses)</button>
+            <button onClick={shuffleHouses} style={btnYellow}>🎲 Random Houses</button>
+          </div>
+          <div style={{ marginBottom: 8, fontWeight: 700 }}>🖼️ Question Images</div>
+          <div style={{ marginBottom: 10, opacity: 0.85 }}>
+            {customImages.length > 0
+              ? `Using ${customImages.length} custom image${customImages.length > 1 ? "s" : ""}.`
+              : "Using built-in images. Upload your own to replace them."}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
+            <label style={{ ...btnGreen, display: "inline-block" }}>
+              📤 Upload Images
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => { onUploadImages(e.target.files); e.currentTarget.value = ""; }}
+                style={{ display: "none" }}
+              />
+            </label>
+            {customImages.length > 0 && (
+              <button onClick={resetImages} style={btnGhost}>↩️ Reset to Default Images</button>
+            )}
+          </div>
+          {customImages.length > 0 && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                gap: 8,
+              }}
+            >
+              {customImages.map((src, i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: "relative",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    background: "#000",
+                    aspectRatio: "1/1",
+                  }}
+                >
+                  <img src={src} alt={`custom ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <button
+                    onClick={() => removeCustomImage(i)}
+                    title="Remove"
+                    style={{
+                      position: "absolute",
+                      top: 2,
+                      right: 2,
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: "rgba(231,76,60,0.95)",
+                      color: "#fff",
+                      fontWeight: 900,
+                      cursor: "pointer",
+                      fontSize: 13,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {popupOpen && (
         <div
