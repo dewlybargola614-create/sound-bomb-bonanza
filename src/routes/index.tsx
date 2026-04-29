@@ -203,7 +203,13 @@ function Game() {
       const qs = localStorage.getItem("fmg_quads");
       if (qs) {
         const parsed = JSON.parse(qs) as Cell[][];
-        if (Array.isArray(parsed) && parsed.length === QUADRANTS) setQuads(parsed);
+        if (Array.isArray(parsed) && parsed.length === QUADRANTS) {
+          // Keep saved layout (house positions & fruits) but reset gameplay progress
+          const fresh = parsed.map((q) =>
+            q.map((c) => ({ ...c, hit: false, revealed: false })),
+          );
+          setQuads(fresh);
+        }
       }
     } catch {
       /* ignore */
