@@ -402,18 +402,36 @@ function Game() {
     <div style={{ fontFamily: "Arial, sans-serif", margin: 0, background: "#0f2a3a", color: "white", minHeight: "100vh" }}>
       <div style={{ textAlign: "center", padding: 10, fontSize: 20, fontWeight: 700, position: "relative" }}>
         🍉 Fruit Missile Game 🚀
-        <button
-          onClick={toggleMusic}
-          title={musicOn ? "Mute music" : "Play music"}
-          style={{
-            position: "absolute", right: 12, top: 8,
-            background: "rgba(255,255,255,0.12)", color: "white",
-            border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8,
-            padding: "4px 10px", fontSize: 16, cursor: "pointer",
-          }}
-        >
-          {musicOn ? "🔊 Music" : "🔇 Music"}
-        </button>
+        <div style={{ position: "absolute", right: 12, top: 8, display: "flex", gap: 8 }}>
+          <button
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.();
+              } else {
+                document.exitFullscreen?.();
+              }
+            }}
+            title="Toggle full screen"
+            style={{
+              background: "rgba(255,255,255,0.12)", color: "white",
+              border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8,
+              padding: "4px 10px", fontSize: 16, cursor: "pointer",
+            }}
+          >
+            ⛶ Full Screen
+          </button>
+          <button
+            onClick={toggleMusic}
+            title={musicOn ? "Mute music" : "Play music"}
+            style={{
+              background: "rgba(255,255,255,0.12)", color: "white",
+              border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8,
+              padding: "4px 10px", fontSize: 16, cursor: "pointer",
+            }}
+          >
+            {musicOn ? "🔊 Music" : "🔇 Music"}
+          </button>
+        </div>
       </div>
 
       <div
