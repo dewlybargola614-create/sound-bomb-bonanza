@@ -129,7 +129,7 @@ function stopBGM() {
 /* ---------------- Config ---------------- */
 const QUADRANT_COLS = 5;
 const QUADRANT_ROWS = 4;
-const HOUSES_PER_QUADRANT = 6;
+const HOUSES_PER_QUADRANT = 10;
 const QUADRANTS = 6;
 
 const QUAD_COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f1c40f", "#9b59b6", "#e67e22"];
@@ -203,7 +203,7 @@ function Game() {
       const qs = localStorage.getItem("fmg_quads");
       if (qs) {
         const parsed = JSON.parse(qs) as Cell[][];
-        if (Array.isArray(parsed) && parsed.length === QUADRANTS) {
+        if (Array.isArray(parsed) && parsed.length === QUADRANTS && parsed.every((q) => Array.isArray(q) && q.length === QUADRANT_COLS * QUADRANT_ROWS)) {
           // Keep saved layout (house positions & fruits) but reset gameplay progress
           const fresh = parsed.map((q) =>
             q.map((c) => ({ ...c, hit: false, revealed: false })),
@@ -313,8 +313,8 @@ function Game() {
     SFX.click();
     setSpinning(true);
     setWheelResult(null);
-    const result = Math.floor(Math.random() * 10) + 1;
-    const segCenter = (result - 1) * 36 + 18;
+    const result = Math.floor(Math.random() * 5) + 1;
+    const segCenter = (result - 1) * 72 + 36;
     const spins = 6;
     const finalAngle = 360 * spins + (360 - segCenter);
     const duration = 1300; // faster
@@ -757,12 +757,12 @@ function Game() {
                       transform: `rotate(${wheelAngle}deg)`,
                       transition: spinning ? "none" : "transform 0.15s",
                       background:
-                        "conic-gradient(#e74c3c 0deg 36deg,#3498db 36deg 72deg,#2ecc71 72deg 108deg,#f1c40f 108deg 144deg,#9b59b6 144deg 180deg,#e67e22 180deg 216deg,#1abc9c 216deg 252deg,#e84393 252deg 288deg,#0984e3 288deg 324deg,#fdcb6e 324deg 360deg)",
+                        "conic-gradient(#e74c3c 0deg 72deg,#3498db 72deg 144deg,#2ecc71 144deg 216deg,#f1c40f 216deg 288deg,#9b59b6 288deg 360deg)",
                       position: "relative",
                     }}
                   >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
-                      const angle = (n - 1) * 36 + 18;
+                    {[1, 2, 3, 4, 5].map((n) => {
+                      const angle = (n - 1) * 72 + 36;
                       return (
                         <div
                           key={n}
