@@ -313,11 +313,11 @@ function Game() {
     SFX.click();
     setSpinning(true);
     setWheelResult(null);
-    const result = Math.floor(Math.random() * 5) + 1;
-    const segCenter = (result - 1) * 72 + 36;
+    const result = Math.floor(Math.random() * 10) + 1;
+    const segCenter = (result - 1) * 36 + 18;
     const spins = 6;
     const finalAngle = 360 * spins + (360 - segCenter);
-    const duration = 1800; // faster
+    const duration = 1300; // faster
     const start = performance.now();
     const from = wheelAngle % 360;
     const to = from + (finalAngle - from);
