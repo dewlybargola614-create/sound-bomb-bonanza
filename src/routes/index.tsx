@@ -313,11 +313,11 @@ function Game() {
     SFX.click();
     setSpinning(true);
     setWheelResult(null);
-    const result = Math.floor(Math.random() * 5) + 1;
-    const segCenter = (result - 1) * 72 + 36;
+    const result = Math.floor(Math.random() * 10) + 1;
+    const segCenter = (result - 1) * 36 + 18;
     const spins = 6;
     const finalAngle = 360 * spins + (360 - segCenter);
-    const duration = 1800; // faster
+    const duration = 1300; // faster
     const start = performance.now();
     const from = wheelAngle % 360;
     const to = from + (finalAngle - from);
@@ -757,12 +757,12 @@ function Game() {
                       transform: `rotate(${wheelAngle}deg)`,
                       transition: spinning ? "none" : "transform 0.15s",
                       background:
-                        "conic-gradient(#e74c3c 0deg 72deg,#3498db 72deg 144deg,#2ecc71 144deg 216deg,#f1c40f 216deg 288deg,#9b59b6 288deg 360deg)",
+                        "conic-gradient(#e74c3c 0deg 36deg,#3498db 36deg 72deg,#2ecc71 72deg 108deg,#f1c40f 108deg 144deg,#9b59b6 144deg 180deg,#e67e22 180deg 216deg,#1abc9c 216deg 252deg,#e84393 252deg 288deg,#0984e3 288deg 324deg,#fdcb6e 324deg 360deg)",
                       position: "relative",
                     }}
                   >
-                    {[1, 2, 3, 4, 5].map((n) => {
-                      const angle = (n - 1) * 72 + 36;
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
+                      const angle = (n - 1) * 36 + 18;
                       return (
                         <div
                           key={n}
@@ -770,7 +770,7 @@ function Game() {
                             position: "absolute", left: "50%", top: "50%",
                             color: "white", fontWeight: 900, fontSize: 22,
                             textShadow: "0 2px 2px rgba(0,0,0,0.5)",
-                            transform: `translate(-50%,-50%) rotate(${angle}deg) translateY(-88px) rotate(${-angle}deg)`,
+                            transform: `translate(-50%,-50%) rotate(${angle}deg) translateY(-85px) rotate(${-angle}deg)`,
                           }}
                         >
                           {n}
