@@ -128,7 +128,7 @@ function stopBGM() {
 
 /* ---------------- Config ---------------- */
 const QUADRANT_COLS = 5;
-const QUADRANT_ROWS = 5;
+const QUADRANT_ROWS = 4;
 const HOUSES_PER_QUADRANT = 6;
 const QUADRANTS = 6;
 
