@@ -770,7 +770,7 @@ function Game() {
                             position: "absolute", left: "50%", top: "50%",
                             color: "white", fontWeight: 900, fontSize: 22,
                             textShadow: "0 2px 2px rgba(0,0,0,0.5)",
-                            transform: `translate(-50%,-50%) rotate(${angle}deg) translateY(-88px) rotate(${-angle}deg)`,
+                            transform: `translate(-50%,-50%) rotate(${angle}deg) translateY(-85px) rotate(${-angle}deg)`,
                           }}
                         >
                           {n}
